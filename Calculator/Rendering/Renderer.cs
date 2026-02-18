@@ -9,7 +9,7 @@ namespace Calculator.Rendering;
 internal class Renderer
 {
     public static readonly Size CanvasSize = new Size(256*2, 256*2);
-    public static readonly int FPS = 120;
+    public static readonly int FPS = 60;
     public static readonly int FrameTimeMs = 1000 / FPS;
 
     private List<RenderObject> renderObjects = new();

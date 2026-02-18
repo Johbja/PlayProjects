@@ -2,23 +2,14 @@
 
 namespace Calculator.Rendering;
 
-internal class RenderObject
+internal class RenderObject(Vector3[] verts, int[][] faces, bool renderVerts = false, int vertSize = 6)
 {
-    private bool renderVerts;
-    private int vertSize;
+    public Vector3 Position { get; set; } = Vector3.UnitZ * 3;
+    public Vector3 Rotation { get; set; } = Vector3.Zero;
+
+    public event Action<RenderObject> OnUpdate;
+
     private float timeElapsed;
-
-    private Vector3[] verts;
-    private int[][] faces;
-
-
-    public RenderObject(Vector3[] verts, int[][] faces, bool renderVerts = false, int vertSize = 6)
-    {
-        this.verts = verts;
-        this.faces = faces;
-        this.renderVerts = renderVerts;
-        this.vertSize = vertSize;
-    }
 
     private (Vector2 pos, int size) ScreenPoint(Vector2 pos, int size)
     {
@@ -40,24 +31,15 @@ internal class RenderObject
             (position.Y / position.Z));
     }
 
-    private Vector3 TranslateZ(Vector3 pos, float amount)
+
+    private Vector3 ApplyTransform(Vector3 localVert)
     {
-        return pos + Vector3.UnitZ * amount;
-    }
+        var rotationMatrix = Matrix4x4.CreateRotationX(Rotation.X) 
+                             * Matrix4x4.CreateRotationY(Rotation.Y) 
+                             * Matrix4x4.CreateRotationZ(Rotation.Z);
 
-    private Vector3 RotateXZ(Vector3 pos, float angle, Vector3 center)
-    {
-        var centeredPos = pos - center;
-
-        float cos = MathF.Cos(angle);
-        float sin = MathF.Sin(angle);
-        var rotatedPos = new Vector3(
-            centeredPos.X * cos - centeredPos.Z * sin,
-            centeredPos.Y,
-            centeredPos.X * sin + centeredPos.Z * cos
-        );
-
-        return rotatedPos + center;
+        var vertRotated = Vector3.Transform(localVert, rotationMatrix);
+        return vertRotated + Position;
     }
 
     private void Line(PaintEventArgs e, Vector2 start, Vector2 end)
@@ -71,7 +53,8 @@ internal class RenderObject
         {
             foreach (var vert in verts)
             {
-                var point = ScreenPoint(TranslateToScreenCoordinates(ProjectToScreen(vert)), vertSize);
+                var appliedVert = ApplyTransform(vert);
+                var point = ScreenPoint(TranslateToScreenCoordinates(ProjectToScreen(appliedVert)), vertSize);
 
                 e.Graphics.FillRectangle(Brushes.Green, point.pos.X, point.pos.Y, point.size, point.size);
             }
@@ -82,8 +65,8 @@ internal class RenderObject
         {
             for (int i = 0; i < face.Length; i++)
             {
-                var vertConnectionA = verts[face[i]];
-                var vertConnectionB = verts[face[(i + 1) % face.Length]];
+                var vertConnectionA = ApplyTransform(verts[face[i]]);
+                var vertConnectionB = ApplyTransform(verts[face[(i + 1) % face.Length]]);
 
                 var pointA = TranslateToScreenCoordinates(ProjectToScreen(vertConnectionA));
                 var pointB = TranslateToScreenCoordinates(ProjectToScreen(vertConnectionB));
@@ -95,30 +78,22 @@ internal class RenderObject
 
     public void Update()
     {
-        float dt = 1f / Renderer.FPS;
-        timeElapsed += dt;
-        var objectCenter = verts.Aggregate(Vector3.Zero, (acc, vert) => acc + vert) / verts.Length;
-
-        var zOffsetValue = MathF.Cos(timeElapsed) * dt;
-
-        for (var i = 0; i < verts.Length; i++)
-        {
-            verts[i] = TranslateZ(RotateXZ(verts[i], MathF.PI * dt, objectCenter), zOffsetValue);
-        }
+        OnUpdate?.Invoke(this);
     }
+
     public static RenderObject CreateCube()
     {
         Vector3[] verts =
         [
-            new Vector3(-0.5f, -0.5f, 3f),
-            new Vector3(0.5f, -0.5f, 3f),
-            new Vector3(0.5f, 0.5f, 3f),
-            new Vector3(-0.5f, 0.5f, 3f),
+            new (-0.5f, -0.5f, 0.5f),
+            new (0.5f, -0.5f, 0.5f),
+            new (0.5f, 0.5f, 0.5f),
+            new (-0.5f, 0.5f, 0.5f),
 
-            new Vector3(-0.5f, -0.5f, 2f),
-            new Vector3(0.5f, -0.5f, 2f),
-            new Vector3(0.5f, 0.5f, 2f),
-            new Vector3(-0.5f, 0.5f, 2f)
+            new (-0.5f, -0.5f, -0.5f),
+            new (0.5f, -0.5f, -0.5f),
+            new (0.5f, 0.5f, -0.5f),
+            new (-0.5f, 0.5f, -0.5f)
         ];
 
         int[][] faces =
@@ -131,7 +106,22 @@ internal class RenderObject
             [3, 7]
         ];
 
-        return new RenderObject(verts, faces);
-    }
+        var obj = new RenderObject(verts, faces);
+        obj.OnUpdate += instance =>
+        {
+            float dt = 1f / Renderer.FPS;
+            instance.timeElapsed += dt;
 
+            var xOffset = MathF.Cos(instance.timeElapsed * 10) * dt * 0.5f;
+            var yOffset = MathF.Sin(instance.timeElapsed * 10) * dt * 0.5f;
+            //Position += new Vector3(xOffset, yOffset, 0);
+            instance.Rotation += new Vector3(
+                MathF.Cos(instance.timeElapsed * 10) * dt * 3f,
+                MathF.Sin(instance.timeElapsed * 10) * dt * 3f, //MathF.PI * dt,
+                dt
+            );
+        };
+
+        return obj;
+    }
 }
