@@ -17,9 +17,9 @@ public class VariablesAndTypes : VariablesAndTypesBase
 {
     public VariablesAndTypes()
     {
-        studentName = "jonne";     // TODO: assign your name
-        studentAge  = 30;      // TODO: assign your age
-        gpa         = 4.0;    // TODO: assign a GPA (0.0 – 4.0)
-        isEnrolled  = true;  // TODO: set to true
+        studentName = "";     // TODO: assign your name
+        studentAge  = 0;      // TODO: assign your age
+        gpa         = 0.0;    // TODO: assign a GPA (0.0 – 4.0)
+        isEnrolled  = false;  // TODO: set to true
     }
 }
