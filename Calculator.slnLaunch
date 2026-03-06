@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "CSharpCourse",
+    "Projects": [
+      {
+        "Path": "CSharpCourse\\CSharpCourse.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
