@@ -1,25 +1,25 @@
-using CSharpCourse.Framework.Assignments;
+﻿using CSharpCourse.Framework.Assignments;
 
 namespace CSharpCourse.Assignments;
 
-// ????????????????????????????????????????????????????????
-// ?  ASSIGNMENT 5 � While Loop                           ?
-// ????????????????????????????????????????????????????????
+// ╔══════════════════════════════════════════════════════╗
+// ║  ASSIGNMENT 5 — While Loop                           ║
+// ╚══════════════════════════════════════════════════════╝
 //
 // Implement both methods using a while loop.
 //
 //  CollatzSteps(n)
 //    Counts how many steps the Collatz sequence takes to
 //    reach 1 starting from n.
-//      � even ? n = n / 2
-//      � odd  ? n = n * 3 + 1
+//      • even ? n = n / 2
+//      • odd  ? n = n * 3 + 1
 //    Count each step until n == 1 (do not count the start).
-//    Example: CollatzSteps(6) ? 8
+//    Example: CollatzSteps(6) → 8
 //
 //  ReverseString(s)
 //    Returns the string reversed using a while loop
 //    (not LINQ or Array.Reverse).
-//    Example: ReverseString("hello") ? "olleh"
+//    Example: ReverseString("hello") → "olleh"
 //
 public class WhileLoop : WhileLoopBase
 {

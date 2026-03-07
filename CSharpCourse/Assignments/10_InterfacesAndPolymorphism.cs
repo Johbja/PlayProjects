@@ -1,19 +1,19 @@
-using CSharpCourse.Framework.Assignments;
+﻿using CSharpCourse.Framework.Assignments;
 
 namespace CSharpCourse.Assignments;
 
-// ????????????????????????????????????????????????????????
-// ?  ASSIGNMENT 10 � Interfaces & Polymorphism           ?
-// ????????????????????????????????????????????????????????
+// ╔══════════════════════════════════════════════════════╗
+// ║  ASSIGNMENT 10 — Interfaces & Polymorphism           ║
+// ╚══════════════════════════════════════════════════════╝
 //
 // Implement the three shapes and the TotalArea helper.
 //
 //  Each shape must implement IShape:
-//    double Area()      � area of the shape
-//    string Describe()  � human-readable description
+//    double Area()      — area of the shape
+//    string Describe()  — human-readable description
 //
 //  Circle(radius)
-//    Area     = ? * r�
+//    Area     = ? * r²
 //    Describe = "Circle with radius <r>"
 //
 //  Rectangle(width, height)
@@ -36,7 +36,7 @@ public class Circle : CircleBase
 
     public override double Area()
     {
-        // TODO: return ? * r�
+        // TODO: return ? * r²
         return 0;
     }
 
