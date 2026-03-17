@@ -16,6 +16,7 @@ namespace CSharpCourse.Assignments;
 //    Returns true when the year is a leap year.
 //    Rule: divisible by 4, EXCEPT centuries unless also by 400.
 //    Examples: 2000 → true, 1900 → false, 2024 → true
+//    [Tip]: use the modulo operator (%) to check for divisibility.
 //
 public class IfElseConditionals : IfElseConditionalsBase
 {
