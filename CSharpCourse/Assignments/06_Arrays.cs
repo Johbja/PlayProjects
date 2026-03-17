@@ -11,6 +11,9 @@ namespace CSharpCourse.Assignments;
 //  GetMax(arr)
 //    Returns the largest value in the array.
 //    Use a loop — do NOT use LINQ.
+//    Example: GetMax([1, 5, 3, 2]) → 5
+//    [Tip]: define an array varaiable with the syntax "int[] arr = new int[5];" to create an array of 5 integers.
+//           You can also initialize it with values like "int[] arr = new int[] {1, 2, 3};".
 //
 //  Rotate(arr)
 //    Returns a NEW array where every element has shifted

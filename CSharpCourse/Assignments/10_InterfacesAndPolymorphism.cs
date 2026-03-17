@@ -27,60 +27,61 @@ namespace CSharpCourse.Assignments;
 //  TotalArea(shapes)
 //    Returns the sum of Area() for every shape in the list.
 //
-public class Circle : CircleBase
+
+public class Circle : IShape
 {
     public Circle(double radius)
     {
         // TODO: store radius
     }
 
-    public override double Area()
+    public double Area()
     {
         // TODO: return ? * r²
         return 0;
     }
 
-    public override string Describe()
+    public string Describe()
     {
         // TODO: return "Circle with radius <r>"
         return "";
     }
 }
 
-public class Rectangle : RectangleBase
+public class Rectangle : IShape
 {
     public Rectangle(double width, double height)
     {
         // TODO: store width and height
     }
 
-    public override double Area()
+    public double Area()
     {
         // TODO: return width * height
         return 0;
     }
 
-    public override string Describe()
+    public string Describe()
     {
         // TODO: return "Rectangle <w> x <h>"
         return "";
     }
 }
 
-public class Triangle : TriangleBase
+public class Triangle : IShape
 {
     public Triangle(double baseLength, double height)
     {
         // TODO: store baseLength and height
     }
 
-    public override double Area()
+    public double Area()
     {
         // TODO: return 0.5 * base * height
         return 0;
     }
 
-    public override string Describe()
+    public string Describe()
     {
         // TODO: return "Triangle with base <b> and height <h>"
         return "";

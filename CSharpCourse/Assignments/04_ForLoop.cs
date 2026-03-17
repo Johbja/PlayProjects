@@ -17,6 +17,7 @@ namespace CSharpCourse.Assignments;
 //    Returns a string counting down from n to 1,
 //    with numbers separated by ", ".
 //    Example: BuildCountdown(5) → "5, 4, 3, 2, 1"
+//    [Tip]: use string concatenation (e.g. text += "5") to build the result string in the loop.
 //
 public class ForLoop : ForLoopBase
 {

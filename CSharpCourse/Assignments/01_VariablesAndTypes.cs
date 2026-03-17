@@ -15,6 +15,14 @@ namespace CSharpCourse.Assignments;
 //
 public class VariablesAndTypes : VariablesAndTypesBase
 {
+    /// <summary>
+    /// Inherited variable fields from <VariablesAndTypesBase> 
+    /// </summary>
+    public int studentAge;
+    public bool isEnrolled;
+    public double gpa;
+    public string studentName;
+
     public VariablesAndTypes()
     {
         studentName = "";     // TODO: assign your name

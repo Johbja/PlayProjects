@@ -3,16 +3,17 @@ using CSharpCourse.Framework.Assignments;
 namespace CSharpCourse.Framework.Tests;
 
 public class Assignment10Tests<TCircle, TRectangle, TTriangle, TCalculator> : Assignment
-    where TCircle : CircleBase
-    where TRectangle : RectangleBase
-    where TTriangle : TriangleBase
+    where TCircle : IShape
+    where TRectangle : IShape
+    where TTriangle : IShape
     where TCalculator : ShapeCalculatorBase, new()
 {
-    // Factory methods: overridden in the student project to call the concrete constructors.
     protected TCircle CreateCircle(double radius) =>
         (TCircle)Activator.CreateInstance(typeof(TCircle), radius)!;
+
     protected TRectangle CreateRectangle(double width, double height) =>
         (TRectangle)Activator.CreateInstance(typeof(TRectangle), width, height)!;
+
     protected TTriangle CreateTriangle(double baseLength, double height) =>
         (TTriangle)Activator.CreateInstance(typeof(TTriangle), baseLength, height)!;
 

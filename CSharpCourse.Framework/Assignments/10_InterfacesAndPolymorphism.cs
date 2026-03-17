@@ -7,24 +7,6 @@ public interface IShape
     string Describe();
 }
 
-public abstract class CircleBase : IShape
-{
-    public abstract double Area();
-    public abstract string Describe();
-}
-
-public abstract class RectangleBase : IShape
-{
-    public abstract double Area();
-    public abstract string Describe();
-}
-
-public abstract class TriangleBase : IShape
-{
-    public abstract double Area();
-    public abstract string Describe();
-}
-
 public abstract class ShapeCalculatorBase
 {
     public abstract double TotalArea(List<IShape> shapes);
