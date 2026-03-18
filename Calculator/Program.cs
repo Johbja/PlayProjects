@@ -1,12 +1,13 @@
 ﻿using Calculator.Calculator.Engine;
 using Calculator.Rendering;
-using System;
+using Calculator.Extensions;
 
 namespace Calculator;
 
 internal class Program
 {
     private static Menu mainMenu;
+    private static readonly string title = "Select Project";
 
     static void Main(string[] args)
     {
@@ -20,18 +21,12 @@ internal class Program
 
     private static void MainLoop()
     {
-        Console.Clear();
-        Console.WriteLine();
-        Console.WriteLine($"---Select project---");
-        Console.WriteLine();
-        foreach (var menu in mainMenu.GetMenuOptions())
+        while (true)
         {
-            Console.WriteLine(menu);
+            Console.Clear();
+            title.PrintAsBannerWithColor();
+            mainMenu.PrintMenuWithSpacing();
+            mainMenu.HandleInput(Console.ReadKey().Key).Execute();
         }
-
-        mainMenu.HandleInput(Console.ReadKey().Key)();
-        MainLoop();
     }
-
-
 }
