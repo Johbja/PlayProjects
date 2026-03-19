@@ -1,63 +1,120 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Calculator.Extensions;
+using ContextEngine;
 
 namespace Calculator;
 
-internal class Menu
+internal class Menu : ContextExecutable
 {
-    private int menuState = 0;
-    private Dictionary<int, MenuOption> menuMapping = new();
-    private MenuAction updateMenuStateDown;
-    private MenuAction updateMenuStateUp;
-
-    private Menu()
+    private MenuTitle menuTitle = new(string.Empty);
+    private MenuState menuState = new MenuState();
+    
+    private Menu(ProgramContext context) : base(context)
     {
-        updateMenuStateDown = new MenuAction(() => UpdateMenuState(ConsoleKey.DownArrow));
-        updateMenuStateUp = new MenuAction( () => UpdateMenuState(ConsoleKey.UpArrow));
     }
 
-    public static Menu Create()
+    public static Menu Create(ProgramContext context)
     {
-        return new Menu();
+        return new Menu(context);
     }
 
-    public MenuAction HandleInput(ConsoleKey key)
+    private void HandleInput(ConsoleKey key)
     {
-        return key switch
+        if (key == ConsoleKey.Enter)
         {
-            ConsoleKey.Enter => menuMapping[menuState].MenuAction,
-            ConsoleKey.DownArrow => updateMenuStateDown,
-            ConsoleKey.UpArrow => updateMenuStateUp,
-            _ => new MenuAction(() => { })
-        };
+            menuState.ExecuteCurrentState();
+
+            return;
+        }
+
+        menuState.UpdateMenuState(key);
     }
 
-    private void UpdateMenuState(ConsoleKey key)
+    public (bool active, MenuOption)[] GetMenuOptions()
     {
-        var newState = key == ConsoleKey.DownArrow ? 1 : -1;
-        menuState = (menuState + newState) % menuMapping.Count;
-    }
-
-    public MenuOption[] GetMenuOptions()
-    {
-        return menuMapping.Values.ToArray();
+        return menuState.GetCurrentState();
     }
 
     public Menu AddMenuOption(MenuOption menuOption)
     {
-        menuMapping.Add(menuMapping.Count, menuOption);
+        menuState.AddMenuOption(menuOption);
 
         return this;
+    }
+
+    public Menu SetTitle(MenuTitle title)
+    {
+        menuTitle = title;
+        
+        return this;
+    }
+
+    public void Render()
+    {
+        ExecuteOnContext(new ContextAction(() =>
+        {
+            Console.Clear();
+            menuTitle.Print();
+            this.Print();
+            HandleInput(Console.ReadKey().Key);
+
+            Render();
+        }));
+    }
+}
+
+internal class MenuTitle(string title, MenuTitleStyleOptions? style = null)
+{
+    public string Title { get; } = title;
+    public MenuTitleStyleOptions Style { get; } = style ?? MenuTitleStyleOptions.CreateDefault;
+}
+
+internal class MenuTitleStyleOptions(int width, ConsoleColor color)
+{
+    public ConsoleColor Color { get; } = color;
+    public int Width { get; } = width;
+
+    public static MenuTitleStyleOptions CreateDefault
+        => new(
+            32,
+            ConsoleColor.Cyan);
+}
+
+internal class MenuState
+{
+    private int state = 0;
+    private Dictionary<int, MenuOption> menuStateMapping = new();
+
+    public void AddMenuOption(MenuOption menuOption)
+    {
+        menuStateMapping.Add(menuStateMapping.Count, menuOption);
+    }
+
+    public void ExecuteCurrentState()
+    {
+        menuStateMapping[state].MenuAction.Execute();
+    }
+
+    public void UpdateMenuState(ConsoleKey key)
+    {
+        if (key is not (ConsoleKey.DownArrow or ConsoleKey.UpArrow))
+        {
+            return;
+        }
+
+        var newState = key == ConsoleKey.DownArrow ? 1 : -1;
+        state = ((state + newState) % menuStateMapping.Count + menuStateMapping.Count) % menuStateMapping.Count;
+    }
+
+    public (bool active, MenuOption)[] GetCurrentState()
+    {
+        return menuStateMapping.Select(option => (option.Key == state, option.Value)).ToArray();
     }
 }
 
 internal class MenuOption(
-string name,
-Action menuAction,
-MenuStyleOptions? style = null)
+    string name,
+    Action menuAction,
+    MenuStyleOptions? style = null)
 {
     public string Name { get; } = name;
     public MenuAction MenuAction { get; } = new MenuAction(menuAction);

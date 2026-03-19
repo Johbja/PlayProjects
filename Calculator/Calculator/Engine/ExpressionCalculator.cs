@@ -1,4 +1,6 @@
-﻿namespace Calculator.Calculator.Engine;
+﻿using System.Globalization;
+
+namespace Calculator.Calculator.Engine;
 
 internal class ExpressionCalculator<TResult>
     : ICalculator<string, TResult>
@@ -31,9 +33,18 @@ internal class ExpressionCalculator<TResult>
 
     public TResult Evaluate(string expression)
     {
+        if (string.IsNullOrWhiteSpace(expression))
+            throw new ArgumentException("Expression cannot be empty.");
+
         var rpn = ToRpn(expression);
         var func = BuildEvaluator(rpn);
         var result = func();
+
+        if (double.IsNaN(result))
+            throw new ArithmeticException("Expression resulted in an undefined value.");
+        if (double.IsInfinity(result))
+            throw new ArithmeticException("Expression resulted in infinity, possibly due to division by zero.");
+
         TResult typedResult = (TResult)Convert.ChangeType(result, typeof(TResult));
 
         _calculationHistory.Push(new Memory(expression, typedResult.ToString()));
@@ -55,7 +66,7 @@ internal class ExpressionCalculator<TResult>
 
         foreach (var token in tokens)
         {
-            if (double.TryParse(token, out _))
+            if (double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
             {
                 output.Add(token);
             }
@@ -80,19 +91,22 @@ internal class ExpressionCalculator<TResult>
             else if (token == ")")
             {
                 while (stack.Count > 0 && stack.Peek() != "(")
-                {
                     output.Add(stack.Pop());
-                }
+
+                if (stack.Count == 0)
+                    throw new ArgumentException("Mismatched parentheses: unexpected ')'.");
+
                 stack.Pop();
                 if (stack.Count > 0 && functions.Contains(stack.Peek()))
-                {
                     output.Add(stack.Pop());
-                }
             }
         }
         while (stack.Count > 0)
         {
-            output.Add(stack.Pop());
+            var top = stack.Pop();
+            if (top == "(")
+                throw new ArgumentException("Mismatched parentheses: unclosed '('.");
+            output.Add(top);
         }
         return output;
     }
@@ -135,15 +149,21 @@ internal class ExpressionCalculator<TResult>
             }
             if (matchedFunc) continue;
 
+            bool matchedOp = false;
             foreach (var op in operators)
             {
                 if (expr.Substring(i).StartsWith(op))
                 {
+                    if (op == "-" && (tokens.Count == 0 || tokens[^1] == "(" || operators.Contains(tokens[^1])))
+                        tokens.Add("0");
                     tokens.Add(op);
                     i += op.Length;
+                    matchedOp = true;
                     break;
                 }
             }
+            if (!matchedOp)
+                throw new ArgumentException($"Unrecognized character '{expr[i]}' at position {i}.");
         }
         return tokens;
     }
@@ -164,12 +184,14 @@ internal class ExpressionCalculator<TResult>
         var stack = new Stack<Func<double>>();
         foreach (var token in rpn)
         {
-            if (double.TryParse(token, out double num))
+            if (double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out double num))
             {
                 stack.Push(() => num);
             }
             else if (operators.Contains(token))
             {
+                if (stack.Count < 2)
+                    throw new ArgumentException($"Insufficient operands for operator '{token}'.");
                 var right = stack.Pop();
                 var left = stack.Pop();
                 var op = operationsMap[token];
@@ -177,41 +199,109 @@ internal class ExpressionCalculator<TResult>
             }
             else if (functions.Contains(token))
             {
+                if (stack.Count < 1)
+                    throw new ArgumentException($"Insufficient operands for function '{token}'.");
                 var arg = stack.Pop();
                 var func = functionsMap[token];
                 stack.Push(() => func(arg()));
             }
         }
+        if (stack.Count != 1)
+            throw new ArgumentException("Expression is invalid.");
         return stack.Pop();
     }
 
-    public string[] Instructions()
-    {
-        return
-        [
-            "---Instructions---",
-            "",
-            "Supported actions: " + string.Join(", ", operators),
-            "Supported functions: " + string.Join(", ", functions.Select(fn => $"{fn}()")),
-            "Parentheses for grouping: ( )",
-            "Example inputs:",
-            "-> 2 + 3 * 4",
-            "-> (1 + 2) * (3 + 4)",
-            "-> 5 ^ 2",
-            "-> sin(0.5) + cos(1.0)",
-            "-> log(10) * sqrt(16)"
-        ];
+    public ExpressionCalculatorInstructions Instructions()
+    { 
+        return new ExpressionCalculatorInstructions(new ExpressionCalculatorInfoTitle("Instructions"))
+            .AddInstruction("This calculator supports basic arithmetic operations, exponentiation, and common mathematical functions.")
+            .AddInstruction("You can use parentheses to group expressions and control the order of operations.")
+            .AddInstruction("Supported operators: " + string.Join(", ", operators), ExpressionCalculatorStyleOptions.CreateDefaultHighlight)
+            .AddInstruction("Supported functions: " + string.Join(", ", functions.Select(fn => $"{fn}()")), ExpressionCalculatorStyleOptions.CreateDefaultHighlight)
+            .AddInstruction("Example inputs:", ExpressionCalculatorStyleOptions.CreateDefaultTitle)
+            .AddInstruction("-> 2 + 3 * 4")
+            .AddInstruction("-> (1 + 2) * (3 + 4)")
+            .AddInstruction("-> 5 ^ 2")
+            .AddInstruction("-> sin(0.5) + cos(1.0)")
+            .AddInstruction("-> log(10) * sqrt(16)");
+
     }
 
-    public string[] GetFullHistory()
+    public ExpressionCalculatorHistory GetFullHistory()
     {
-        string[] header = [
-            "---History---",
-            "",
-        ];
-
-        return header.Concat(CalculationHistory.Select(entry => $"{entry.Expression} = {entry.Result}")).ToArray();
+        return new ExpressionCalculatorHistory(new ExpressionCalculatorInfoTitle("History"))
+            .AddHistoryEntries(CalculationHistory);
     }
 }
+
+internal class ExpressionCalculatorInstructions(ExpressionCalculatorInfoTitle infoTitle)
+{
+    public ExpressionCalculatorInfoTitle InfoTitle { get; private set; } = infoTitle;
+    public List<ExpressionCalculatorInfoEntry> InstructionEntries { get; private set; } = new();
+
+    public ExpressionCalculatorInstructions AddInstruction(string description, ExpressionCalculatorStyleOptions? style = null)
+    {
+        InstructionEntries.Add(new ExpressionCalculatorInfoEntry(description, style ?? ExpressionCalculatorStyleOptions.CreateDefaultText));
+
+        return this;
+    }
+}
+
+internal class ExpressionCalculatorHistory(ExpressionCalculatorInfoTitle infoTitle)
+{
+    public ExpressionCalculatorInfoTitle InfoTitle { get; private set; } = infoTitle;
+    public List<ExpressionCalculatorInfoEntry> HistoryEntries { get; private set; } = new();
+    public ExpressionCalculatorHistory AddHistoryEntry(string description, ExpressionCalculatorStyleOptions? style = null)
+    {
+        HistoryEntries.Add(new ExpressionCalculatorInfoEntry(description, style ?? ExpressionCalculatorStyleOptions.CreateDefaultText));
+
+        return this;
+    }
+
+    public ExpressionCalculatorHistory AddHistoryEntries(IEnumerable<Memory> history, ExpressionCalculatorStyleOptions? style = null)
+    {
+        foreach (var entry in history)
+        {
+            HistoryEntries.Add(new ExpressionCalculatorInfoEntry($"{entry.Expression} = {entry.Result}", style ?? ExpressionCalculatorStyleOptions.CreateDefaultText));
+        }
+
+        return this;
+    }
+}
+
+internal class ExpressionCalculatorInfoTitle(string title, ExpressionCalculatorStyleOptions? style = null)
+{
+    public string Title { get; } = title;
+    public ExpressionCalculatorStyleOptions Style { get; } = style ?? ExpressionCalculatorStyleOptions.CreateDefaultTitle;
+}
+
+internal class ExpressionCalculatorStyleOptions(int width, ConsoleColor color)
+{
+    public ConsoleColor Color { get; } = color;
+    public int Width { get; } = width;
+
+    public static ExpressionCalculatorStyleOptions CreateDefaultHighlight
+        => new(
+            32,
+            ConsoleColor.Yellow);
+
+    public static ExpressionCalculatorStyleOptions CreateDefaultTitle
+        => new(
+            32,
+            ConsoleColor.Cyan);
+
+    public static ExpressionCalculatorStyleOptions CreateDefaultText
+        => new(
+            32,
+            ConsoleColor.White);
+}
+
+
+internal class ExpressionCalculatorInfoEntry(string description, ExpressionCalculatorStyleOptions? style = null)
+{
+    public string Description { get; } = description;
+    public ExpressionCalculatorStyleOptions Style { get; } = style ?? ExpressionCalculatorStyleOptions.CreateDefaultTitle;
+}
+
 
 

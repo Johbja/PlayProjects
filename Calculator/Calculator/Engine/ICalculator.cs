@@ -4,8 +4,8 @@ internal interface ICalculator<TExpression, TResult>
 {
     public TResult Evaluate(TExpression expression);
     public TResult LastAnswer();
-    public string[] Instructions();
-    public string[] GetFullHistory();
+    public ExpressionCalculatorInstructions Instructions();
+    public ExpressionCalculatorHistory GetFullHistory();
     public Stack<Memory> CalculationHistory { get; }
 }
 

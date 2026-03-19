@@ -1,103 +1,103 @@
-﻿using Calculator.Calculator;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Calculator.Extensions;
+using ContextEngine;
 
 namespace Calculator.Calculator.Engine;
-internal class CalculatorSimulator
+internal class CalculatorSimulator : ContextExecutable
 {
-    private string title = "Master Blaster Calculator";
-    private Menu mainMenu;
     private ExpressionCalculator<double> calculator = new();
+    private readonly ProgramContext childContext;
 
-    public CalculatorSimulator(Action exitCallback = null)
+    public CalculatorSimulator(ProgramContext pc) : base(pc)
     {
-        mainMenu = Menu.Create()
+        childContext = new ProgramContext();
+        var subContext = pc.AddSubContext(childContext);
+
+        Menu.Create(childContext)
+            .SetTitle(new MenuTitle("Master Blaster Calculator"))
             .AddMenuOption(new MenuOption("Enter equation", EnterEquation))
             .AddMenuOption(new MenuOption("View history", ViewHistory))
             .AddMenuOption(new MenuOption("Help", Help))
-            .AddMenuOption(new MenuOption("Exit", exitCallback == null ? () => Environment.Exit(0) : exitCallback));
+            .AddMenuOption(new MenuOption("Exit", () => { subContext.Dispose(); }))
+            .Render();
     }
 
-    public void Emulate()
+    public override void ExecuteOnContext(IContextExecutableItem logic)
     {
-        MainLoop();
-    }
-
-    private void MainLoop()
-    {
-        Console.Clear();
-        Console.WriteLine();
-        Console.WriteLine($"---{title}---");
-        Console.WriteLine();
-
-        foreach (var menuOption in mainMenu.GetMenuOptions())
-        {
-            Console.WriteLine(menuOption);
-        }
-
-        mainMenu.HandleInput(Console.ReadKey().Key)();
-        MainLoop();
+        childContext.EnqueueExecution(logic);
     }
 
     private void EnterEquation()
     {
-        string inputMessage = "Enter equation (or exit to return): ";
-        Console.Clear();
-        Console.WriteLine();
-        Console.WriteLine("---Enter equation---");
-        Loop();
-
-        void Loop()
+        ExecuteOnContext(new ContextAction(() =>
         {
-            Console.WriteLine();
-            Console.Write(inputMessage);
-            var equation = Console.ReadLine();
-            equation = equation?.Replace(inputMessage, "");
-
-            if (equation?.ToLower() == "exit")
+            while (true)
             {
-                MainLoop();
-                return;
-            }
+                Console.Clear();
+                Console.CursorVisible = true;
 
-            if (equation is not null)
-            {
-                var result = calculator.Evaluate(equation);
-                Console.WriteLine($"Result: {result}");
-            }
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"╔{new string('═', 32)}╗");
+                Console.WriteLine($"║{"Enter Equation".PadLeft((32 + "Enter Equation".Length) / 2).PadRight(32)}║");
+                Console.WriteLine($"╚{new string('═', 32)}╝");
+                Console.ResetColor();
+                Console.WriteLine();
 
-            Loop();
-        }
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine("  type 'exit' to return");
+                Console.ResetColor();
+                Console.WriteLine();
+
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("  \u00bb ");
+                Console.ResetColor();
+
+                var equation = Console.ReadLine();
+
+                if (equation?.ToLower() == "exit" || equation is null)
+                {
+                    Console.CursorVisible = false;
+                    break;
+                }
+
+                try
+                {
+                    var result = calculator.Evaluate(equation);
+                    Console.WriteLine();
+                    Console.WriteLine($"  {new string('─', 50)}");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"  = {result}");
+                    Console.ResetColor();
+                    Console.WriteLine($"  {new string('─', 50)}");
+                }
+                catch (Exception ex)
+                {
+                    ex.PrintAsError();
+                }
+                finally
+                {
+                    Console.ReadKey();
+                }
+            }
+        }));
     }
 
     private void Help()
     {
-        Console.Clear();
-        Console.WriteLine();
-        foreach (var instruction in calculator.Instructions())
+        ExecuteOnContext(new ContextAction(() =>
         {
-            Console.WriteLine(instruction);
-        }
-        Console.WriteLine();
-        Console.WriteLine("Press any key to return to menu...");
-
-        Console.ReadKey();
+            Console.Clear();
+            calculator.Instructions().Print();
+            Console.ReadKey();
+        }));
     }
 
     private void ViewHistory()
     {
-        Console.Clear();
-        Console.WriteLine();
-        foreach (var history in calculator.GetFullHistory())
+        ExecuteOnContext(new ContextAction(() =>
         {
-            Console.WriteLine(history);
-        }
-        Console.WriteLine();
-        Console.WriteLine("Press any key to return to menu...");
-
-        Console.ReadKey();
+            Console.Clear();
+            calculator.GetFullHistory().Print();
+            Console.ReadKey();
+        }));
     }
 }
